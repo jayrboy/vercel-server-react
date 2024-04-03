@@ -3,27 +3,11 @@ import 'dotenv/config'
 import express from 'express'
 import os from 'os'
 import cors from 'cors'
-import mongoose from 'mongoose'
-import paginate from 'mongoose-paginate-v2' //สำหรับแบ่งเพจ
+
+import product from './product.js'
+import student from './student.js'
 
 const app = express()
-const port = process.env.PORT || 8000
-
-mongoose
-  .connect(process.env.MONGODB_URL)
-  .then((result) => console.log('Connection OK'))
-  .catch((err) => console.log(err))
-
-let productSchema = new mongoose.Schema({
-  name: String,
-  price: Number,
-  detail: String,
-  date_added: Date,
-})
-
-productSchema.plugin(paginate) //สำหรับแบ่งเพจ
-
-let Product = mongoose.model('Product', productSchema)
 
 app.use(cors())
 app.use(express.urlencoded({ extended: true }))
@@ -98,119 +82,23 @@ app.post('/api/form-post', (req, res) => {
   res.send(text)
 })
 
-app.post('/api/db/create', (request, response) => {
-  let form = request.body
-  let data = {
-    name: form.name || '',
-    price: form.price || 0,
-    detail: form.detail || '',
-    date_added: new Date(Date.parse(form.date_added)) || new Date(),
+app.use('/api/db', product)
+
+app.use('/api/student', student)
+
+app.use((req, res) => res.status(404).send('Route does not exist'))
+
+const port = process.env.PORT || 8000
+
+const startApp = () => {
+  try {
+    app.listen(port, () => {
+      console.log('Server running at http://localhost:%s', port)
+    })
+  } catch (error) {
+    console.log(error)
+    process.exit(1)
   }
+}
 
-  Product.create(data)
-    .then((result) => {
-      console.log('Data inserted')
-      response.send(true) // Send a success response
-    })
-    .catch((err) => {
-      console.error(err) // Log the error
-      response.status(500).send(false) // Send an error response with a 500 status code
-    })
-})
-
-app.get('/api/db/read', (request, response) => {
-  Product.find({})
-    .exec()
-    .then((docs) => response.json(docs))
-    .catch((err) => console.log(err))
-})
-
-app.post('/api/db/update', (request, response) => {
-  let form = request.body
-  let data = {
-    name: form.name || '',
-    price: form.price || 0,
-    detail: form.detail || '',
-    date_added: form.date_added
-      ? new Date(Date.parse(form.date_added))
-      : new Date(),
-  }
-
-  Product.findByIdAndUpdate(form._id, data, { useFindAndModify: false })
-    .then((updatedProduct) => {
-      console.log('Data updated')
-      return Product.find().exec()
-    })
-    .then((docs) => {
-      response.json(docs)
-    })
-    .catch((err) => {
-      console.error(err)
-      response.status(500).json({ error: err })
-    })
-})
-
-app.post('/api/db/delete', (request, response) => {
-  let _id = request.body._id
-
-  Product.findByIdAndDelete(_id, { useFindAndModify: false })
-    .then((deletedProduct) => {
-      response.json(docs)
-      console.log('Data deleted')
-      return Product.find().exec()
-    })
-    .then((docs) => {})
-    .catch((err) => {
-      console.error(err)
-      response.status(500).json({ error: err })
-    })
-})
-
-app.get('/api/db/paginate', (request, response) => {
-  let options = {
-    page: request.query.page || 1, // Current page
-    limit: 2, // Display 2 items per page (for limited data)
-  }
-
-  Product.paginate({}, options)
-    .then((result) => {
-      response.json(result)
-    })
-    .catch((err) => {
-      console.error(err)
-      response.status(500).json({ error: err })
-    })
-})
-
-app.get('/api/db/search', (request, response) => {
-  let q = request.query.q || ''
-
-  // In this case, create a RegExp pattern to perform case-insensitive search
-  let pattern = new RegExp(q, 'i')
-
-  // Search in the 'name' and 'detail' fields using $or
-  let conditions = {
-    $or: [
-      { name: { $regex: pattern, $options: 'i' } },
-      { detail: { $regex: pattern, $options: 'i' } },
-    ],
-  }
-
-  let options = {
-    page: request.query.page || 1, // Current page
-    limit: 2, // Display 2 items per page (for limited data)
-  }
-
-  Product.paginate(conditions, options)
-    .then((result) => {
-      response.json(result)
-    })
-    .catch((err) => {
-      console.error(err)
-      response.status(500).json({ error: err })
-    })
-})
-
-app.listen(port, () =>
-  console.log('Server running at http://localhost:%s', port)
-)
+startApp()
