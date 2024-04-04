@@ -82,6 +82,43 @@ app.post('/api/form-post', (req, res) => {
   res.send(text)
 })
 
+app.post('/api/exam', (req, res) => {
+  // console.log(req.body)
+  let name = req.body.name || ''
+  let keycard = req.body.keycard || ''
+  let address = req.body.address || ''
+  let bank = req.body.bank || ''
+  let slip = req.body.file || ''
+
+  let text = `
+  <table class='table table-striped table-bordered' border="1">
+  <tr class='table-info text-center'>
+    <th colspan="2"><h4>ข้อมูลที่ส่งขึ้นไป</h4></th>
+  </tr>
+  <tr>
+    <th>ชื่อ:</th>
+    <td>${name}</td>
+  </tr>
+  <tr>
+    <th>การรับคียการ์ด:</th>
+    <td>${keycard}</td>
+  </tr>
+  <tr>
+    <th>ที่อยู่:</th>
+    <td>${address}</td>
+  </tr>
+  <tr>
+    <th>ธนาคาร:</th>
+    <td>${bank}</td>
+  </tr>
+  <tr>
+    <th>ไฟล์รูป:</th>
+    <td>${slip}</td>
+  </tr>
+  </table>`
+  res.send(text)
+})
+
 app.use('/api/db', product)
 
 app.use('/api/student', student)
